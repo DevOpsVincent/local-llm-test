@@ -5,4 +5,4 @@
 
 
 "create_and_save_embeddings" Langchain Methode:
-- Einfach und Simple
+- Einfach und Simple & FUNKTIONIERT BESSER!
