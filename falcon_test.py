@@ -1,4 +1,3 @@
-#import test_easy_embeddings
 import os
 from langchain import HuggingFaceHub, PromptTemplate, LLMChain
 
