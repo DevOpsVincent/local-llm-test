@@ -16,5 +16,5 @@ question = input("Hallo, stelle mir eine Frage: ")
 docs = new_db.similarity_search(question, k=2)
 
 # Anschaulichere Darstellung mit Seitenzahl: & Limit an Wörtern
-for doc in docs:
-    print(str(doc.metadata["page"])+":", doc.page_content[:500])
+#for doc in docs:
+#    print(str(doc.metadata["page"])+":", doc.page_content[:500])
