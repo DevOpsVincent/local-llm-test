@@ -1,17 +1,61 @@
-from langchain.document_loaders import PyPDFLoader
+import PyPDF2
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer
+from typing import List
 
-#lädt PDF
-loader = PyPDFLoader("PDFs/fi-magazin-2-2023-neu-64a433fd8b27d709701238.pdf")
-pages = loader.load_and_split()
+# lädt PDF
+file_path = "PDFs/fi-magazin-2-2023-neu-64a433fd8b27d709701238.pdf"
+pdf_text = ""
+with open(file_path, 'rb') as pdf_file:
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
+    for page in pdf_reader.pages:
+        pdf_text += page.extract_text()
 
-#Erstellt embeddings
-faiss_index = FAISS.from_documents(
-    pages,
+# Text cleanen
+clean_pdf = pdf_text.replace("\n", "")
+
+# Größere Textabschnitte in Chunks speichern, um sie effizienter weiterverarbeiten zu können
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 1000,
+    chunk_overlap  = 0,
+    length_function = len,
+    is_separator_regex = False,
+)
+
+chunks = text_splitter.split_text(clean_pdf)
+
+#Text in Embeddings umwandeln
+class Embed:
+    def __init__(self, model_name="paraphrase-MiniLM-L6-v2"):
+        self.transformer = SentenceTransformer(model_name, device="cpu")
+
+    def __call__(self, text_batch: List[str]):
+        embeddings = self.transformer.encode(
+            text_batch,
+            batch_size=100,
+            device="cpu",
+        ).tolist()
+
+        return list(zip(text_batch, embeddings))
+
+embedder = Embed()
+embeddings_data = embedder(chunks)
+
+# Erstellt embeddings
+embeddings = FAISS.from_embeddings(
+    embeddings_data,
     embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2")
 )
 
-#speichert embeddings Lokal
-faiss_index.save_local("faiss_index")
+"""
+query = "Warum ist Nachhaltigkeit im Banking so wichtig?"
+docs = embeddings.similarity_search(query)
 
+print(docs[0])
+"""
+
+# speichert embeddings Lokal
+embeddings.save_local("faiss_index")
+print("Speichern fertig!")
